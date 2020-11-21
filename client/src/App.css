@@ -1,5 +1,5 @@
 .App {
-  text-align: center;
+  text-align: left;
 }
 
 .App-logo {
@@ -19,4 +19,10 @@
 
 .App-link {
   color: #09d3ac;
+}
+
+#C2Dstation{
+  border: 2px dashed black;
+  minHeight: 100px;
+  width:350px;
 }

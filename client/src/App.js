@@ -1,13 +1,17 @@
 import React, { Component } from "react";
+import { Button, InputNumber, version } from "antd";
 import SimpleStorageContract from "./contracts/SimpleStorage.json";
 import CLVContract from "./contracts/Clover.json";
 import CLV2DContract from "./contracts/CLV2D.json";
 import getWeb3 from "./getWeb3";
 
+import "antd/dist/antd.css";
 import "./App.css";
 
 class App extends Component {
-  state = { storageValue: 0, clvBAL: 0, ethBAL: 0, web3: null, accounts: null, 
+  state = { storageValue: 0, clvBal: 0, ethBal: 0, 
+    c2dBuyPrice: 0, c2dSellPrice:0, c2dBal: 0,
+    web3: null, accounts: null, 
     contract: null, CLVcontract: null};
 
   componentDidMount = async () => {
@@ -45,7 +49,6 @@ class App extends Component {
         CLV2Dcontract: CLV2Dinstance
       });
       this.getAccountETHBal();
-      this.mintCLV();
       this.fetchC2DInfo();
     } catch (error) {
       // Catch any errors for any of the above operations.
@@ -58,9 +61,9 @@ class App extends Component {
 
   getAccountETHBal = async() =>{
     this.state.web3.eth.getBalance(this.state.accounts[0], (err, balance) => {
-      this.state.ethBAL = this.state.web3.utils.fromWei(balance, "ether") + " ETH"
+      this.state.ethBal = this.state.web3.utils.fromWei(balance, "ether") + " ETH"
     });
-    console.log("ETHBAL: "+this.state.ethBAL);
+    console.log("ETHBAL: "+this.state.ethBal);
   };
 
   runExample = async () => {
@@ -79,16 +82,18 @@ class App extends Component {
   mintCLV = async () => {
     const { accounts, CLVcontract } = this.state;
     //console.log(CLVcontract);
-
+    var amount = this.state.CLVtoBuy*1000000;//must multiply bc CLV has 6 decimals
     //first add me to minters
     //await CLVcontract.methods.addMinter(accounts[0]).send({from: accounts[0]});
     // Stores a given value, 5 by default.
     //await CLVcontract.methods.balanceOf(accounts[0]).class-extends
-    //await CLVcontract.methods.mint(accounts[0], 50000).send({ from: accounts[0] });
+    await CLVcontract.methods.mint(accounts[0], amount).send({ from: accounts[0] });
     // Get the value from the contract to prove it worked.
     const response = await CLVcontract.methods.balanceOf(accounts[0]).call();
     // Update state with the result.
-    this.setState({ clvBAL: response });
+    this.setState({
+      clvBal: this.state.web3.utils.fromWei(response, "mwei"),
+    });
   };
 
   fetchC2DInfo = async () => {
@@ -96,9 +101,18 @@ class App extends Component {
     console.log(CLV2Dcontract);
     const response = await CLV2Dcontract.methods.allInfoFor(accounts[0]).call();  
     console.log(response);
-    this.setState({c2dBal: response.userBalance, 
-      c2dBuyPrice: response.buyPrice, c2dSellPrice: response.sellPrice
+    this.setState({
+      clvBal: this.state.web3.utils.fromWei(response.userCLV, "mwei"),
+      userAllowance: this.state.web3.utils.fromWei(response.userAllowance, "mwei"),
+      c2dBal: this.state.web3.utils.fromWei(response.userBalance, "ether"),
+      c2dBuyPrice: this.state.web3.utils.fromWei(response.buyPrice, "mwei"),
+      c2dSellPrice: this.state.web3.utils.fromWei(response.sellPrice, "mwei"),
      });
+  }
+
+  buyC2D = async () => {
+    const{accounts, CLV2Dcontract} = this.state;
+    //await CLV2Dcontract.methods.buy<F3>(accounts[0], 50000).send({ from: accounts[0] });
   }
 
 
@@ -116,13 +130,31 @@ class App extends Component {
           If your contracts compiled and migrated successfully, below will show
           a stored value of 5 (by default).
         </p>
-        <p>
-          Try changing the value stored on <strong>line 40</strong> of App.js.
-        </p>
-        <div>The stored value is: {this.state.storageValue}</div>
-        <div>You currently own: {this.state.clvBAL}CLV</div>
-        <div>You currently own: {this.state.ethBAL}</div>
-        <div>C2D info: Own {this.state.c2dBal}, BuyPrice {this.state.c2dBuyPrice/1000000}, Sell {this.state.c2dSellPrice/1000000}</div>
+        <div id="CLVstation">
+          <h2>CLV station</h2>
+          
+          <p>You currently own: {this.state.clvBal}CLV</p>
+          <p>You currently own: {this.state.ethBal}</p>
+
+          <InputNumber min={0} step={0.1} placeholder="500" onChange={(value) => {
+            this.setState({CLVtoBuy:value});
+          }} />
+          <Button type="primary" onClick={this.mintCLV}>Mint and Give Me CLV</Button>
+        </div>
+
+
+        <div id="C2Dstation">
+          <h2>C2D station</h2>
+          <h3>Buy: {this.state.c2dBuyPrice} CLV per C2D</h3>
+          <h3>Sell: {this.state.c2dSellPrice} CLV per C2D</h3>
+          <h3>C2D owned: {this.state.c2dBal}</h3>
+          <h2>Swap CLV to C2D: 
+            <InputNumber min={0} max={1000000} step={0.1} placeholder={this.state.clvBal} onChange={(value) => {
+              this.setState({C2DtoBuy:value});
+            }} />
+            <Button type="primary" onClick={this.buyC2D}>Swap</Button>
+          </h2>
+        </div>
       </div>
     );
   }
