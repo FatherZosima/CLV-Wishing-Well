@@ -21,7 +21,7 @@ class Player:
         if(self.wouldGamble()):#check if this a gamble the player might make
             moneyToGamble = self.gambleAmount()
             #now to actually test if they won
-            likelihood = 2.0/np.pi * np.arctan(0.2*moneyToGamble/currentPot)#2.0/np.pi * np.arctan(0.1*moneyToGamble/currentPot)
+            likelihood = 2.0/np.pi * np.arctan(0.1*moneyToGamble/currentPot)#2.0/np.pi * np.arctan(0.1*moneyToGamble/currentPot)
             if(likelihood < minimumProbability): likelihood = minimumProbability
            # likelihood = np.round(likelihood,3)
            # print("calculating likelihood for player",self.playerID,"-",likelihood)
@@ -76,7 +76,7 @@ currentPot = 5 #start with a small pot first round
 
 numPlayers = 500
 defaultStartingMoney = 500 #amount each player starts with
-minimumProbability = 0.01 #at least 1/100 chance for any player
+minimumProbability = 0.005 #at least 1/100 chance for any player
 #populate list of players
 players = []
 for i in range(numPlayers):
