@@ -8,7 +8,7 @@
 // Trust the plan.
 //
 
-pragma solidity ^0.5.16;
+pragma solidity ^0.5.17;
 
 interface Callable {
 	function tokenCallback(address _from, uint256 _tokens, bytes calldata _data) external returns (bool);
