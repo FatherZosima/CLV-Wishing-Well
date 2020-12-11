@@ -1,18 +1,22 @@
-import React from 'react';
+import React, { Component } from 'react';
 import './Countdown.css';
-class Countdown extends React.Component {
+class Countdown extends Component {
   constructor(props) {
     super(props);
-    this.state = {endDate: props.endDate};
+    this.state = {endTime: props.endTime};
   }
 
 
   componentDidUpdate(prevProps){
-    if(prevProps.endDate !== this.props.endDate){
+    if(prevProps.endTime !== this.props.endTime){
         this.setState({          
-            endDate: this.props.endDate
+            endTime: this.props.endTime
         });
     }
+  }
+
+  sendToParent = () => {
+    this.props.parentCallback(this.state.totalSecondsLeft);
   }
 
   componentDidMount() {
@@ -31,7 +35,7 @@ class Countdown extends React.Component {
   }
 
   calculateRemainingTime() {
-    let endTime = new Date(this.state.endDate*1000);
+    let endTime = new Date(this.state.endTime*1000);//mult by 1000 to go to milliseconds
     let now = new Date();
     let timeLeft = endTime - now;
     if(timeLeft<0) timeLeft = 0;
@@ -44,18 +48,18 @@ class Countdown extends React.Component {
       wellHoursLeft: ("0"+hoursLeft).slice(-2),
       wellMinutesLeft: ("0"+minutesLeft).slice(-2),
       wellSecondsLeft: ("0"+secondsLeft).slice(-2),
-      wellTotalSecondsLeft: timeLeft/1000
+      totalSecondsLeft: timeLeft/1000 //convert from ms to s
     })
-
+    this.sendToParent(this.state.totalSecondsLeft);
   }
 
   render() {
     return (
-      <div class="countdown">
-        <div id="days" class="countdown-number"><h2>{this.state.wellDaysLeft}</h2><p>days</p></div>
-        <div id="hours" class="countdown-number"><h2>{this.state.wellHoursLeft}</h2><p>hours</p></div>
-        <div id="minutes" class="countdown-number"><h2>{this.state.wellMinutesLeft}</h2><p>minutes</p></div>
-        <div id="seconds" class="countdown-number"><h2>{this.state.wellSecondsLeft}</h2><p>seconds</p></div>
+      <div className="countdown">
+        <div id="days" className="countdown-number"><h2>{this.state.wellDaysLeft}</h2><p>days</p></div>
+        <div id="hours" className="countdown-number"><h2>{this.state.wellHoursLeft}</h2><p>hours</p></div>
+        <div id="minutes" className="countdown-number"><h2>{this.state.wellMinutesLeft}</h2><p>minutes</p></div>
+        <div id="seconds" className="countdown-number"><h2>{this.state.wellSecondsLeft}</h2><p>seconds</p></div>
       </div>
     );
   }

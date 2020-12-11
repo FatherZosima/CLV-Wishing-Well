@@ -1,0 +1,7 @@
+.station{
+  border: 2px dashed black;
+  minHeight: 100px;
+  width:350px;
+  float:left;
+}
+

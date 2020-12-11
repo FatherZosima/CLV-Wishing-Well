@@ -156,7 +156,7 @@ contract RandomWell {
 
   function bet(uint256 _amount) external gameIsNotOver returns (uint256){
     //_tokens come it with 6 decimals. ie 1 CLV comes in as 1000000
-    require(_amount > info.minBet);
+    require(_amount >= info.minBet);
     require(info.clv.transferFrom(msg.sender, address(this), _amount));
 		info.potBalance += _amount;
     info.playsThisRound += 1;
