@@ -21,23 +21,15 @@
   color: #09d3ac;
 }
 
-#C2Dstation{
+#main{
+  width: 500px;
+  margin: auto;
+}
+
+.station{
   border: 2px dashed black;
   minHeight: 100px;
   width:350px;
   float:left;
 }
 
-#CLVstation{
-  border: 2px dashed black;
-  minHeight: 100px;
-  width:350px;
-  float:left;
-}
-
-#Wellstation{
-  border: 2px dashed black;
-  minHeight: 100px;
-  width:350px;
-  float:left;
-}

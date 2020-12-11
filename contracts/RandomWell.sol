@@ -14,7 +14,7 @@ contract RandomWell {
   uint constant private EULERS = 2718281;//6 decimals E
   uint256 constant private startingPotSize = 1000000; //pot must always start with 1
   uint256 constant private skimPercent = 1; //skim 5% of winnins to put into C2D
-  uint constant private bigPotFrequency = 100; // how often the big pot occurs
+  uint constant public bigPotFrequency = 10; // how often the big pot occurs
   uint constant private minimumProbability = 1; //At least 1/2000 chance for any gamble
   uint constant private minute = 10; //60 seconds in a minute
 
@@ -29,6 +29,7 @@ contract RandomWell {
 
 	struct Info {
     Clover clv;
+    CLV2D c2d;
 
 		mapping(address => User) users;
     address lastPlayer;
@@ -46,8 +47,9 @@ contract RandomWell {
   
   Info private info;
 
-	constructor(address _CLVaddress) public {
+	constructor(address _CLVaddress, address _C2Daddress) public {
     info.clv = Clover(_CLVaddress);
+    info.c2d = CLV2D(_C2Daddress);
     //not sure if these are needed, but good to be safe
     info.lastWinner = address(0x0);
     info.lastPlayer = address(0x0);
@@ -64,17 +66,40 @@ contract RandomWell {
   function startNextRound() external gameIsOver{
     //first need to clean up last round
     if(info.playsThisRound>0){//if any bets were played
-      uint256 playerWinnings = info.potBalance - startingPotSize;
-      info.users[info.lastPlayer].winnings += playerWinnings;
-      info.potBalance = startingPotSize;
+      if(info.potBalance>startingPotSize){
+        uint256 available = info.potBalance - startingPotSize;
+        uint256 forC2D = available/20; //take 5%
+        uint256 playerWinnings = available-forC2D;
+        info.users[info.lastPlayer].winnings += playerWinnings;
+        info.potBalance -= forC2D;
+        info.potBalance -= playerWinnings;
+        
+        //transfer to c2d
+        if(forC2D>0 && ((info.roundNumber+1) % bigPotFrequency != 0)){
+          info.clv.approve(address(info.c2d), forC2D);
+          info.c2d.buy(forC2D);
+        }
+      }
     }//else dont modify pot or users winnings.
     info.lastWinner = info.lastPlayer;
 
+    
     //start next round
     info.roundNumber++;
+    //fill pot with c2d
+    if(info.roundNumber%bigPotFrequency == 0){
+      //sell all c2d
+      uint256 c2dBal = info.c2d.balanceOf(address(this));
+      uint256 newCLV = info.c2d.sell(c2dBal);
+      info.potBalance += newCLV;
+
+      //reinvest c2d dividends
+      info.c2d.reinvest();
+    }
+
     info.playsThisRound = 0;
     info.lastPlayer = address(0x0);
-    info.roundEndTime = now+5*minute;//add 5 mins
+    info.roundEndTime = now+2*60;//add 2 mins
     info.minBet = calcMinBet();
   }
 
@@ -89,14 +114,11 @@ contract RandomWell {
   }
 
   function withdrawWinnings() external returns (uint256){
-    //uint256 currBal = currentWinnings(msg.sender);
+    uint256 currBal = currentWinnings(msg.sender);
     //check that that we have something
-    //require(currBal > 0, "Need more than 0CLV in winnings to withdraw");
-    //info.clv.approve(msg.sender, currBal);
-		//info.clv.transfer(msg.sender, currBal);
-		//info.users[msg.sender].winnings -= currBal;
-		uint currBal = info.clv.balanceOf(address(this));
-    info.clv.transfer(msg.sender, currBal);
+    require(currBal > 0, "Need more than 0CLV in winnings to withdraw");
+		info.clv.transfer(msg.sender, currBal);
+		info.users[msg.sender].winnings -= currBal;
 
     emit Withdraw(msg.sender, currBal);
 		return currBal;
@@ -113,7 +135,10 @@ contract RandomWell {
   address lastWinner,
   uint256 wellBalance,
   uint256 userAllowance,
-  uint256 userWinnings){
+  uint256 userWinnings,
+  uint256 wellC2Dbalance,
+  uint256 wellC2Ddividends,
+  uint256 bigPotFreq){
     potBalance = info.potBalance;
     roundNumber = info.roundNumber;
     playsThisRound = info.playsThisRound;
@@ -124,6 +149,9 @@ contract RandomWell {
     wellBalance = info.clv.balanceOf(address(this));
     userAllowance = info.clv.allowance(_user, address(this));
     userWinnings = currentWinnings(_user);
+    wellC2Dbalance = info.c2d.balanceOf(address(this));
+    wellC2Ddividends = info.c2d.dividendsOf(address(this));
+    bigPotFreq = bigPotFrequency;
   }
 
   function bet(uint256 _amount) external gameIsNotOver returns (uint256){
@@ -131,7 +159,6 @@ contract RandomWell {
     require(_amount > info.minBet);
     require(info.clv.transferFrom(msg.sender, address(this), _amount));
 		info.potBalance += _amount;
-    //info.roundNumber = likelihood;
     info.playsThisRound += 1;
     if(msg.sender == info.lastPlayer){
       info.roundEndTime += 1*minute;//add 1 min if they just played
