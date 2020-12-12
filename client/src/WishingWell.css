@@ -1,0 +1,16 @@
+.WellStation{
+  border: 2px dashed black;
+  width: 100%;
+  background-image: url("well_bg.jpg");
+  background-size: cover;
+  background-repeat: no-repeat;
+  color:white;
+  padding:10px;
+}
+
+
+#statusInfo {
+  width:100%;
+  text-align:center;
+}
+

@@ -6,6 +6,8 @@
     "@truffle/hdwallet-provider": "^1.2.0",
     "bootstrap": "^4.5.3",
     "react": "16.11.0",
+    "react-animated-number": "^0.4.4",
+    "react-circular-progressbar": "^2.0.3",
     "react-dom": "16.11.0",
     "react-scripts": "3.2.0",
     "reactstrap": "^8.7.1",

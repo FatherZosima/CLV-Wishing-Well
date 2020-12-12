@@ -4,10 +4,17 @@ import {
   FormGroup, Label, Input,
   Button, FormText, FormFeedback,
   Collapse,
+  Progress
 } from 'reactstrap';
-import './Station.css'
+import './WishingWell.css'
 import Countdown from './Countdown.js';
-
+import {
+  CircularProgressbar,
+  CircularProgressbarWithChildren,
+  buildStyles
+} from "react-circular-progressbar";
+import "react-circular-progressbar/dist/styles.css";
+import AnimatedNumber from 'react-animated-number';
 
 class WellInterface extends Component {
   constructor(props) {
@@ -71,6 +78,7 @@ class WellInterface extends Component {
       wellC2Ddividends: web3.utils.fromWei(response.wellC2Ddividends, "mwei"),
       bigPotFrequency: response.bigPotFreq
     });
+    this.shortenAddress(response.lastPlayer);
   };
 
   bet = async() => {
@@ -126,6 +134,14 @@ class WellInterface extends Component {
       }
     }
   };
+
+  shortenAddress(addy){
+    if(addy==null){
+      return "0x00...000"
+    }
+    let str = addy.slice(0,4)+"..."+addy.slice(-3);
+    return str;
+  };
 /*
  * p
           <Button color="primary" onClick={toggleMoreInfo} style={{ marginBottom: '1rem' }}>Toggle</Button>
@@ -136,25 +152,63 @@ class WellInterface extends Component {
   render() {
     //const [isOpen, setIsOpen] = useState(false);
     //const toggle= () => setIsOpen(!isOpen);
-    const {WellBetAmount} = this.state;
+    const {WellBetAmount, wellTotalSecondsLeft, bigPotFrequency, wellRoundNumber} = this.state;
 
     return (
-        <div className="station">
-          <h2>Wishing Well</h2>
+        <div className="WellStation">
+          <h2 >Wishing Well</h2>
+           <CircularProgressbarWithChildren
+        value={(wellRoundNumber%bigPotFrequency)/bigPotFrequency * 100}
+        strokeWidth={3}
+        styles={buildStyles({
+          pathColor: "#D4Af37",
+          trailColor: "transparent"
+        })}
+      >
+        {/*
+          Width here needs to be (100 - 2 * strokeWidth)% 
+          in order to fit exactly inside the outer progressbar.
+        */}
+        <div style={{ width: "94%" }}>
+          <CircularProgressbarWithChildren
+            className="statusCircle"
+            value={wellTotalSecondsLeft/(5*60)*100}
+            strokeWidth={5}
+            background
+            styles={buildStyles({
+              backgroundColor: "rgba(0,0,0,0.5)",
+              pathColor: "#f00",
+              trailColor: "transparent"
+            })}
+          >
+            <h4>
+                    <AnimatedNumber
+                        style={{
+                            transition: '0.8s ease-out',
+                            transitionProperty:
+                                'background-color, color'
+                        }}
+                        frameStyle={perc => (
+                            perc === 100 ? {} : {backgroundColor: '#66cc33'}
+                        )}
+                        stepPrecision={0.1}
+                        value={this.state.wellPot}
+                      formatValue={n => `Current Pot: ${n.toFixed(2)} CLV `}/>
+          </h4>
           <Countdown endTime={this.state.roundEndTime} parentCallback={this.countdownCallback} > </Countdown>
-          <h3>Big Pot Every {this.state.bigPotFrequency} rounds</h3>
-          <p>Well User allowance: {this.state.wellUserAllowance}</p>
+          <h3>Round {wellRoundNumber}</h3>
+          <p>{bigPotFrequency-(wellRoundNumber%bigPotFrequency) != 1 ? 
+             "Pot of Gold in " + Number(bigPotFrequency - (wellRoundNumber%bigPotFrequency)) + " rounds" : "Pot of Gold starting next round" }</p>
+          </CircularProgressbarWithChildren>
+        </div>
+      </CircularProgressbarWithChildren>
           <p>Well Pot: {this.state.wellPot}</p>
-          <p>Well CLV bal: {this.state.wellCLVBalance}</p>
           <p>MinimumBet: {this.state.minBet}</p>
           <p>Well Round Num: {this.state.wellRoundNumber}</p>
           <p>Plays this round: {this.state.wellPlays}</p>
-          <p>Last Player: {this.state.lastPlayer}</p>
-          <p>Last Winner: {this.state.lastWinner}</p>
-          <p>RoundEndTime: {this.state.roundEndTime}</p>
-          <p>TimeLeft: {this.state.wellDaysLeft} days, {this.state.wellHoursLeft} hours, {this.state.wellMinutesLeft} mins, {this.state.wellSecondsLeft} secs</p>
-          <p>C2D balance: {this.state.wellC2Dbalance}</p>
-          <p>C2D dividends: {this.state.wellC2Ddividends}</p>
+          <p>Last Player: <a href={"https://rinkeby.etherscan.io/address/"+this.state.lastPlayer}>{this.shortenAddress(this.state.lastPlayer)}</a></p>
+          <p>Last Winner: <a href={"https://rinkeby.etherscan.io/address/"+this.state.lastWinner}>{this.shortenAddress(this.state.lastWinner)}</a></p>
+          <p>C2D balance: {parseFloat(this.state.wellC2Dbalance).toFixed(2)}</p>
           <p>User winnings: {this.state.wellUserWinnings}</p>
           <Button onClick={this.withdrawWell}>Withdraw</Button>
           {parseFloat(WellBetAmount) > parseFloat(this.state.wellUserAllowance) && <Button onClick={this.CLVapproveWell}>Approve</Button>}
@@ -177,6 +231,9 @@ class WellInterface extends Component {
             </FormGroup>
           </Col>
           </Form>
+          <p>Well User allowance: {this.state.wellUserAllowance}</p>
+          <p>Well CLV bal: {this.state.wellCLVBalance}</p>
+          <p>C2D dividends: {parseFloat(this.state.wellC2Ddividends).toFixed(2)}</p>
           <p>Use button below to prime pot with CLV in the event that there is no CLV in the pot. Does not count as a bet.</p>
           <Button onClick={this.addToPot}>add 1CLV to pot (does not count as a bet)</Button>        
         </div>

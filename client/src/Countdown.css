@@ -1,9 +1,13 @@
 .countdown{
   text-align: center;
+  width: 80%;
+  margin: 0px auto;
+}
+
+.countdown-clock{
   display:flex;
   justify-content:space-between;
 }
-
 .countdown-number {
   float: left;
   width: 21%;

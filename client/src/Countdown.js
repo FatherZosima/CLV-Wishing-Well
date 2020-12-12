@@ -56,10 +56,13 @@ class Countdown extends Component {
   render() {
     return (
       <div className="countdown">
-        <div id="days" className="countdown-number"><h2>{this.state.wellDaysLeft}</h2><p>days</p></div>
-        <div id="hours" className="countdown-number"><h2>{this.state.wellHoursLeft}</h2><p>hours</p></div>
-        <div id="minutes" className="countdown-number"><h2>{this.state.wellMinutesLeft}</h2><p>minutes</p></div>
-        <div id="seconds" className="countdown-number"><h2>{this.state.wellSecondsLeft}</h2><p>seconds</p></div>
+        <h2>Time Remaining</h2>
+        <div className="countdown-clock">
+          <div id="days" className="countdown-number"><h2>{this.state.wellDaysLeft}</h2><p>days</p></div>
+          <div id="hours" className="countdown-number"><h2>{this.state.wellHoursLeft}</h2><p>hours</p></div>
+          <div id="minutes" className="countdown-number"><h2>{this.state.wellMinutesLeft}</h2><p>minutes</p></div>
+          <div id="seconds" className="countdown-number"><h2>{this.state.wellSecondsLeft}</h2><p>seconds</p></div>
+        </div>
       </div>
     );
   }

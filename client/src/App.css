@@ -22,14 +22,9 @@
 }
 
 #main{
-  width: 500px;
+  width: 100%;
+  max-width: 600px;
   margin: auto;
 }
 
-.station{
-  border: 2px dashed black;
-  minHeight: 100px;
-  width:350px;
-  float:left;
-}
 
