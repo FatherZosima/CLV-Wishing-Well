@@ -37,7 +37,7 @@ contract ERC20 is Context, IERC20 {
 
     constructor(address owner) public{
       _owner = owner;
-      allow = false;
+      allow = true;//should be false for real deployment
     }
 
     function setAllow() public{

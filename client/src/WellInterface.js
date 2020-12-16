@@ -1,20 +1,28 @@
-import React, { Component, useState } from 'react';
+import React, { Component, useState } from "react";
+
+import { isMobile } from "react-device-detect";
+
 import {
-  Container, Col, Form,
-  FormGroup, Label, Input,
-  Button, FormText, FormFeedback,
-  Collapse,
-  Progress
-} from 'reactstrap';
-import './WishingWell.css'
-import Countdown from './Countdown.js';
-import {
-  CircularProgressbar,
-  CircularProgressbarWithChildren,
-  buildStyles
-} from "react-circular-progressbar";
-import "react-circular-progressbar/dist/styles.css";
-import AnimatedNumber from 'react-animated-number';
+  Alert,
+  Container,
+  Tabs,
+  Tab,
+  Form,
+  Button,
+  Col,
+  Row,
+  InputGroup,
+} from "react-bootstrap";
+import "bootstrap/dist/css/bootstrap.min.css";
+
+import "./WellInterface.css";
+
+import Notification from "react-web-notification";
+
+import WellStatus from "./WellStatus.js";
+import WellInfo from "./WellInfo.js";
+import WellDetails from "./WellDetails.js";
+import OutBetAlert from "./OutBetAlert.js";
 
 class WellInterface extends Component {
   constructor(props) {
@@ -26,218 +34,392 @@ class WellInterface extends Component {
       addresses: props.addresses,
       contracts: props.contracts,
       CLVscalar: props.CLVscalar,
-      wellC2Dbalance:0, wellC2Ddividends:0,
-      roundEndTime:0, minBet:0,
-      WellBetAmount:0,
+      wellC2Dbalance: 0,
+      roundEndTime: 0,
+      minBet: 0,
+      WellBetAmount: 0,
+      roundOver: true,
+      wasOutBet: false,
+      txs: [],
     };
+
+    //listen for events that would change the wellInfo
+    this.state.contracts.C2D.events
+      .allEvents()
+      .on("data", (event) => {
+        if (["Buy", "Sell"].includes(event.event)) {
+          this.fetchWellInfo();
+        }
+      })
+      .on("error", console.error);
+    this.state.contracts.CLV.events
+      .Approval()
+      .on("data", (event) => {
+        if (
+          event.returnValues.owner == this.state.accounts[0] &&
+          event.returnValues.spender == this.state.addresses.Well
+        ) {
+          this.fetchWellInfo();
+        }
+      })
+      .on("error", console.error);
+    this.state.contracts.CLV.events
+      .Transfer()
+      .on("data", (event) => {
+        if (event.returnValues.to == this.state.addresses.Well) {
+          //might want to check for .from != accounts[0] which will be emited on Bet
+          this.fetchWellInfo();
+        }
+      })
+      .on("error", console.error);
+    this.state.contracts.Well.events
+      .allEvents()
+      .on("data", (event) => {
+        this.fetchWellInfo();
+      })
+      .on("error", console.error);
   }
 
-  componentDidUpdate(prevProps){
-    if(prevProps.endTime !== this.props.endTime){
-        this.setState({          
-            endTime: this.props.endTime
-        });
+  componentDidUpdate(prevProps) {
+    if (prevProps.endTime !== this.props.endTime) {
+      this.setState({
+        endTime: this.props.endTime,
+      });
     }
   }
-  
+
   componentDidMount() {
-    this.timerID = setInterval(
-      () => this.fetchWellInfo(),
-      5000
-    );
+    this.timerID = setInterval(() => this.fetchWellInfo(), 5000);
     this.fetchWellInfo();
   }
   componentWillUnmount() {
     clearInterval(this.timerID);
   }
 
-
-  CLVapproveWell = async() => {
-    const{accounts, contracts, addresses} = this.state;
+  CLVapproveWell = async () => {
+    const { accounts, contracts, addresses, txs } = this.state;
     //only do this is you need methods
-    await contracts.CLV.methods.approve(addresses.Well, 1e12).send();
-    this.fetchWellInfo();
+    await contracts.CLV.methods
+      .approve(addresses.Well, 1e12)
+      .send()
+      .on("transactionHash", function (hash) {
+        txs.push({ type: "Approve Well", note: "", hash: hash });
+      });
   };
 
-  fetchWellInfo = async() => {
-    const{web3, accounts, contracts, CLVscalar} = this.state;
+  fetchWellInfo = async () => {
+    const { web3, accounts, contracts, CLVscalar } = this.state;
     const response = await contracts.Well.methods.wellInfo(accounts[0]).call();
-    this.setState({
-      wellPot: response.potBalance/CLVscalar,
+    //check if we lost our spot
+    if (
+      this.state.lastPlayer == accounts[0] &&
+      response.lastPlayer != accounts[0]
+    ) {
+      //this.setState({wasOutBet:true});
+      alert(
+        "You are no longer the last player. Bet again to reclaim your place"
+      );
+    }
+    for (var key of Object.keys(response)) {
+      let val = response[key];
+      if (
+        [
+          "potBalance",
+          "minBet",
+          "wellBalance",
+          "userWinnings",
+          "userAllowance",
+        ].includes(key)
+      ) {
+        val = val / CLVscalar;
+      }
+      if (key === "wellC2Dbalance") {
+        val = web3.utils.fromWei(val, "ether");
+      }
+      if (val !== this.state[key]) {
+        this.setState({
+          [key]: val,
+        });
+      }
+    }
+    /*this.setState({
+      wellPot: response.potBalance / CLVscalar,
       wellRoundNumber: response.roundNumber,
       wellPlays: response.playsThisRound,
       roundEndTime: response.roundEndTime,
-      minBet: response.minBet/CLVscalar,
+      minBet: response.minBet / CLVscalar,
       lastPlayer: response.lastPlayer,
       lastWinner: response.lastWinner,
-      roundOver: (new Date(response.roundEndTime*1000) - new Date())<=0,
-      wellCLVBalance: response.wellBalance/CLVscalar,
+      wellCLVBalance: response.wellBalance / CLVscalar,
       wellUserAllowance: web3.utils.fromWei(response.userAllowance, "mwei"),
-      wellUserWinnings: response.userWinnings/CLVscalar,
+      wellUserWinnings: response.userWinnings / CLVscalar,
       wellC2Dbalance: web3.utils.fromWei(response.wellC2Dbalance, "ether"),
-      wellC2Ddividends: web3.utils.fromWei(response.wellC2Ddividends, "mwei"),
       bigPotFrequency: response.bigPotFreq
-    });
-    this.shortenAddress(response.lastPlayer);
+    });*/
+    console.log(this.state);
   };
 
-  bet = async() => {
-    const{web3, contracts, WellBetAmount, CLVscalar} = this.state;
-    if(WellBetAmount > 0) {
-      console.log("trying to bet "+WellBetAmount);
-      let response = await contracts.Well.methods.bet(WellBetAmount*CLVscalar).send();
+  bet = async () => {
+    const { web3, contracts, WellBetAmount, CLVscalar, txs } = this.state;
+    let wellBet = parseFloat(WellBetAmount);
+    if (wellBet > 0 && wellBet >= this.state.minBet) {
+      console.log("trying to bet " + wellBet);
+      let amt = wellBet * CLVscalar;
+      await contracts.Well.methods
+        .bet(amt)
+        .send()
+        .on("transactionHash", function (hash) {
+          txs.push({ type: "Bet", note: WellBetAmount + " CLV", hash: hash });
+        });
     }
-    this.fetchWellInfo();
   };
 
-  addToPot = async() => {
-    const{web3, accounts, contracts, CLVscalar} = this.state;
-    let amount = 1*CLVscalar;
-    let response = await contracts.Well.methods.addToPot(amount).send();
+  startNextRound = async () => {
+    const {
+      web3,
+      contracts,
+      roundOver,
+      WellBetAmount,
+      CLVscalar,
+      txs,
+    } = this.state;
+    let wellBet = parseFloat(WellBetAmount);
+    if (wellBet >= 0.222222 && roundOver) {
+      let amt = wellBet * CLVscalar;
+      await contracts.Well.methods
+        .startNextRound(amt)
+        .send()
+        .on("transactionHash", function (hash) {
+          txs.push({
+            type: "Start Next Round",
+            note: WellBetAmount + " CLV",
+            hash: hash,
+          });
+        });
+    }
   };
 
-  startNextGame = async() => {
-    const{web3, contracts} = this.state;
-    let response = await contracts.Well.methods.startNextRound().send();
-    this.fetchWellInfo();
-  };
-  
-  withdrawWell = async() => {
-    const{web3, accounts, contracts} = this.state;
-    let response = await contracts.Well.methods.withdrawWinnings().send();
+  withdrawWell = async () => {
+    const { web3, accounts, contracts, txs, wellUserWinnings } = this.state;
+    await contracts.Well.methods
+      .withdrawWinnings()
+      .send()
+      .on("transactionHash", function (hash) {
+        txs.push({ type: "Withdraw Winnings", note: "", hash: hash });
+      });
   };
 
-  countdownCallback = (totalSecondsLeft) => {
-    this.setState({
-      wellTotalSecondsLeft: totalSecondsLeft
-    });
-  }
-  
+  timeLeftCallback = (totalSecondsLeft) => {
+    if (totalSecondsLeft <= 0 != this.state.roundOver) {
+      this.setState({
+        roundOver: totalSecondsLeft <= 0,
+      });
+    }
+  };
+
   handleChange = async (event) => {
     const { target } = event;
-    const value = target.type === 'checkbox' ? target.checked : target.value;
+    const value = target.type === "checkbox" ? target.checked : target.value;
     const { name } = target;
     await this.setState({
-      [ name ]: value,
+      [name]: value,
     });
   };
-  
-  submitFormBet(e) {
-    e.preventDefault();
-    if((this.state.roundOver || (this.state.timeLeft<=0))){
-      console.log("starting next game");
-      this.startNextGame();
-    } else{
-      console.log("Try to bet: "+this.state.WellBetAmount);
-      if(parseFloat(this.state.WellBetAmount)>0){
-       this.bet();
-      }
-    }
-  };
 
-  shortenAddress(addy){
-    if(addy==null){
-      return "0x00...000"
+  shortenAddress(addy) {
+    if (addy == null) {
+      return "0x00...000";
     }
-    let str = addy.slice(0,4)+"..."+addy.slice(-3);
+    let str = addy.slice(0, 4) + "..." + addy.slice(-3);
     return str;
-  };
-/*
- * p
-          <Button color="primary" onClick={toggleMoreInfo} style={{ marginBottom: '1rem' }}>Toggle</Button>
-          <Collapse isOpen={isOpenMoreInfo}>
-            <h2>DONG</h2>
-          </Collapse>
-          */
+  }
+
   render() {
-    //const [isOpen, setIsOpen] = useState(false);
-    //const toggle= () => setIsOpen(!isOpen);
-    const {WellBetAmount, wellTotalSecondsLeft, bigPotFrequency, wellRoundNumber} = this.state;
+    console.log("wellinterface render");
+    const {
+      web3,
+      contracts,
+      addresses,
+      accounts,
+      txs,
+      CLVscalar,
+      potBalance,
+      minBet,
+      WellBetAmount,
+      bigPotFreq,
+      roundEndTime,
+      roundOver,
+      wellC2Dbalance,
+      roundNumber,
+      lastPlayer,
+      lastWinner,
+      playsThisRound,
+      wellBalance,
+      userAllowance,
+      wasOutBet,
+    } = this.state;
+    if (isMobile) {
+      return (
+        <Tabs defaultActiveKey="info" id="uncontrolled-tab-example">
+          <Tab eventKey="info" title="Info">
+            <h2>Wishing Well</h2>
+            <p>Instructions go here</p>
+          </Tab>
+          <Tab eventKey="well" title="Well">
+            <WellStatus
+              wellPot={potBalance}
+              round={roundNumber}
+              bigPotFrequency={bigPotFreq}
+              roundEndTime={roundEndTime}
+              callback={this.timeLeftCallback}
+            />
+            <p>User winnings: {this.state.wellUserWinnings}</p>
+            <Button onClick={this.withdrawWell}>Withdraw</Button>
 
-    return (
-        <div className="WellStation">
-          <h2 >Wishing Well</h2>
-           <CircularProgressbarWithChildren
-        value={(wellRoundNumber%bigPotFrequency)/bigPotFrequency * 100}
-        strokeWidth={3}
-        styles={buildStyles({
-          pathColor: "#D4Af37",
-          trailColor: "transparent"
-        })}
-      >
-        {/*
-          Width here needs to be (100 - 2 * strokeWidth)% 
-          in order to fit exactly inside the outer progressbar.
-        */}
-        <div style={{ width: "94%" }}>
-          <CircularProgressbarWithChildren
-            className="statusCircle"
-            value={wellTotalSecondsLeft/(5*60)*100}
-            strokeWidth={5}
-            background
-            styles={buildStyles({
-              backgroundColor: "rgba(0,0,0,0.5)",
-              pathColor: "#f00",
-              trailColor: "transparent"
-            })}
-          >
-            <h4>
-                    <AnimatedNumber
-                        style={{
-                            transition: '0.8s ease-out',
-                            transitionProperty:
-                                'background-color, color'
-                        }}
-                        frameStyle={perc => (
-                            perc === 100 ? {} : {backgroundColor: '#66cc33'}
-                        )}
-                        stepPrecision={0.1}
-                        value={this.state.wellPot}
-                      formatValue={n => `Current Pot: ${n.toFixed(2)} CLV `}/>
-          </h4>
-          <Countdown endTime={this.state.roundEndTime} parentCallback={this.countdownCallback} > </Countdown>
-          <h3>Round {wellRoundNumber}</h3>
-          <p>{bigPotFrequency-(wellRoundNumber%bigPotFrequency) != 1 ? 
-             "Pot of Gold in " + Number(bigPotFrequency - (wellRoundNumber%bigPotFrequency)) + " rounds" : "Pot of Gold starting next round" }</p>
-          </CircularProgressbarWithChildren>
-        </div>
-      </CircularProgressbarWithChildren>
-          <p>Well Pot: {this.state.wellPot}</p>
-          <p>MinimumBet: {this.state.minBet}</p>
-          <p>Well Round Num: {this.state.wellRoundNumber}</p>
-          <p>Plays this round: {this.state.wellPlays}</p>
-          <p>Last Player: <a href={"https://rinkeby.etherscan.io/address/"+this.state.lastPlayer}>{this.shortenAddress(this.state.lastPlayer)}</a></p>
-          <p>Last Winner: <a href={"https://rinkeby.etherscan.io/address/"+this.state.lastWinner}>{this.shortenAddress(this.state.lastWinner)}</a></p>
-          <p>C2D balance: {parseFloat(this.state.wellC2Dbalance).toFixed(2)}</p>
-          <p>User winnings: {this.state.wellUserWinnings}</p>
-          <Button onClick={this.withdrawWell}>Withdraw</Button>
-          {parseFloat(WellBetAmount) > parseFloat(this.state.wellUserAllowance) && <Button onClick={this.CLVapproveWell}>Approve</Button>}
-
-          <Form className="form" onSubmit={ (e) => this.submitFormBet(e) }>
-          <Col>
-            <FormGroup>
-              <Label>Amount to Bet</Label>
-              <Input
+            <InputGroup>
+              <InputGroup.Prepend>
+                <InputGroup.Text
+                  className="disable-text-selection"
+                  onClick={(e) =>
+                    this.setState({
+                      WellBetAmount: roundOver ? 0.222222 : minBet,
+                    })
+                  }
+                >
+                  Min: {roundOver ? 0.222222 : minBet}
+                </InputGroup.Text>
+              </InputGroup.Prepend>
+              <Form.Control
                 name="WellBetAmount"
                 type="number"
                 id="inputWellBetAmount"
-                placeholder = {100}
+                placeholder={100}
                 value={WellBetAmount}
-                onChange={ (e) => {
-                            this.handleChange(e);
-                          } }
+                onChange={(e) => {
+                  this.handleChange(e);
+                }}
               />
-              <Button>{this.state.wellTotalSecondsLeft <= 0 ? "StartNextGame" : "Bet" }</Button>
-            </FormGroup>
-          </Col>
-          </Form>
-          <p>Well User allowance: {this.state.wellUserAllowance}</p>
-          <p>Well CLV bal: {this.state.wellCLVBalance}</p>
-          <p>C2D dividends: {parseFloat(this.state.wellC2Ddividends).toFixed(2)}</p>
-          <p>Use button below to prime pot with CLV in the event that there is no CLV in the pot. Does not count as a bet.</p>
-          <Button onClick={this.addToPot}>add 1CLV to pot (does not count as a bet)</Button>        
-        </div>
+              <InputGroup.Append>
+                <InputGroup.Text>CLV</InputGroup.Text>
+              </InputGroup.Append>
+              <InputGroup.Append>
+                {parseFloat(WellBetAmount) > parseFloat(userAllowance) && (
+                  <Button onClick={this.CLVapproveWell}>Approve</Button>
+                )}
+                {parseFloat(WellBetAmount) <= parseFloat(userAllowance) &&
+                  roundOver && (
+                    <Button onClick={this.nextRound}>Start Next Round</Button>
+                  )}
+                {parseFloat(WellBetAmount) <= parseFloat(userAllowance) &&
+                  !roundOver && <Button onClick={this.bet}>Bet</Button>}
+              </InputGroup.Append>
+            </InputGroup>
+          </Tab>
+          <Tab eventKey="Details" title="Details">
+            <WellDetails
+              web3={web3}
+              contracts={contracts}
+              accounts={accounts}
+              addresses={addresses}
+              txs={txs}
+              CLVscalar={CLVscalar}
+              wellPot={potBalance}
+              wellC2Dbalance={wellC2Dbalance}
+              minBet={minBet}
+              round={roundNumber}
+              lastPlayer={lastPlayer}
+              lastWinner={lastWinner}
+              wellPlays={playsThisRound}
+              wellCLVBalance={wellBalance}
+              wellUserAllowance={userAllowance}
+            />
+          </Tab>
+        </Tabs>
+      );
+    }
 
+    return (
+      <div className="WellStation">
+        <Container fluid>
+          <Row>
+            <Col>
+              <WellInfo addresses={addresses} />
+            </Col>
+            <Col>
+              <WellStatus
+                wellPot={potBalance}
+                round={roundNumber}
+                bigPotFrequency={bigPotFreq}
+                roundEndTime={roundEndTime}
+                callback={this.timeLeftCallback}
+              />
+              <p>User winnings: {this.state.wellUserWinnings}</p>
+              <Button onClick={this.withdrawWell}>Withdraw</Button>
+              <OutBetAlert wasOutBet={wasOutBet} />
+              <InputGroup>
+                <InputGroup.Prepend>
+                  <InputGroup.Text
+                    className="disable-text-selection"
+                    onClick={(e) =>
+                      this.setState({
+                        WellBetAmount: roundOver ? 0.222222 : minBet,
+                      })
+                    }
+                  >
+                    Min: {roundOver ? 0.222222 : minBet}
+                  </InputGroup.Text>
+                </InputGroup.Prepend>
+                <Form.Control
+                  name="WellBetAmount"
+                  type="number"
+                  id="inputWellBetAmount"
+                  placeholder={100}
+                  value={WellBetAmount}
+                  onChange={(e) => {
+                    this.handleChange(e);
+                  }}
+                />
+                <InputGroup.Append>
+                  <InputGroup.Text>CLV</InputGroup.Text>
+                </InputGroup.Append>
+                <InputGroup.Append>
+                  {parseFloat(WellBetAmount) > parseFloat(userAllowance) && (
+                    <Button onClick={this.CLVapproveWell}>Approve</Button>
+                  )}
+                  {parseFloat(WellBetAmount) <= parseFloat(userAllowance) &&
+                    roundOver && (
+                      <Button onClick={this.startNextRound}>
+                        Start Next Round
+                      </Button>
+                    )}
+                  {parseFloat(WellBetAmount) <= parseFloat(userAllowance) &&
+                    !roundOver && <Button onClick={this.bet}>Bet</Button>}
+                </InputGroup.Append>
+              </InputGroup>
+            </Col>
+
+            <Col>
+              <WellDetails
+                web3={web3}
+                contracts={contracts}
+                accounts={accounts}
+                addresses={addresses}
+                txs={txs}
+                CLVscalar={CLVscalar}
+                wellPot={potBalance}
+                wellC2Dbalance={wellC2Dbalance}
+                minBet={minBet}
+                round={roundNumber}
+                lastPlayer={lastPlayer}
+                lastWinner={lastWinner}
+                wellPlays={playsThisRound}
+                wellCLVBalance={wellBalance}
+                wellUserAllowance={userAllowance}
+              />
+            </Col>
+          </Row>
+        </Container>
+      </div>
     );
   }
 }

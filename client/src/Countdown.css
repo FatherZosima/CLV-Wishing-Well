@@ -1,25 +1,17 @@
-.countdown{
+.countdown {
   text-align: center;
   width: 80%;
   margin: 0px auto;
 }
 
-.countdown-clock{
-  display:flex;
-  justify-content:space-between;
+.countdown-clock {
+  display: flex;
+  justify-content: space-between;
 }
 .countdown-number {
   float: left;
   width: 21%;
-  border: 1px solid black;
 }
 .countdown-number * {
   text-align: center;
-}
-
-#Wellstation{
-  border: 2px dashed black;
-  minHeight: 100px;
-  width:350px;
-  float:left;
 }

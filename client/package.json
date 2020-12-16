@@ -7,10 +7,13 @@
     "bootstrap": "^4.5.3",
     "react": "16.11.0",
     "react-animated-number": "^0.4.4",
+    "react-animation": "^1.2.2",
+    "react-bootstrap": "^1.4.0",
     "react-circular-progressbar": "^2.0.3",
+    "react-device-detect": "^1.14.0",
     "react-dom": "16.11.0",
     "react-scripts": "3.2.0",
-    "reactstrap": "^8.7.1",
+    "react-web-notification": "^0.8.0",
     "web3": "1.2.2"
   },
   "scripts": {
@@ -33,5 +36,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "prettier": "2.2.1"
   }
 }

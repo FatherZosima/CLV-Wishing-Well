@@ -11,7 +11,7 @@ const getWeb3 = () =>
         const web3 = new Web3(window.ethereum);
         try {
           // Request account access if needed
-          await window.ethereum.enable();//deprecated
+          await window.ethereum.enable(); //deprecated
           //await window.ethereum.send('eth_requestAccounts');
           // Acccounts now exposed
           resolve(web3);

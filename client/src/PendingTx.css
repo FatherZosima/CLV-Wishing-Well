@@ -1,0 +1,25 @@
+.TXwindow {
+  width: 100%;
+  padding: 10px;
+  border-radius: 15px;
+  min-height: 300px;
+  border: 2px solid #1a2228;
+}
+
+.tx {
+  border-radius: 10px;
+  border: 2px solid #5d432c;
+  height: 80px;
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 5px;
+}
+.tx.pending {
+  border: 2px solid #ffae42;
+}
+.tx.successful {
+  border: 2px solid #00ff00;
+}
+.tx.failed {
+  border: 2px solid #ff0000;
+}
