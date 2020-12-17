@@ -11,17 +11,22 @@ class PendingTx extends Component {
       addresses: props.addresses,
       contracts: props.contracts,
       CLVscalar: props.CLVscalar,
-      txs: props.txs,
+      txs: props.txs
     };
   }
 
   componentDidUpdate(prevProps) {
-    for (var key of Object.keys(prevProps)) {
+    for (var key of Object.keys(this.props)) {
+      if(key=="txs"){
+        if(Object.keys(prevProps[key]).length != Object.keys(this.props[key]).length){
+          this.setState({txs: this.props.txs});
+          continue;
+        }
+      }
       if (prevProps[key] !== this.props[key]) {
         this.setState({
           [key]: this.props[key],
         });
-        this.checkTxs();
       }
     }
   }
@@ -32,30 +37,34 @@ class PendingTx extends Component {
   componentWillUnmount() {
     clearInterval(this.timerID);
   }
-  clearOld = async () => {
-    if (this.state.txs.length > 5) {
-      this.state.txs.shift();
-    }
-  };
   checkTxs = async () => {
-    this.clearOld();
     var tx;
+    var newTx;
+    var updatedTxs=[];
+    //if(this.state.txs.length==0){
+      //return;
+    //}
     for (tx of this.state.txs) {
-      if (tx.status != "successful" && tx.status != "failed") {
+      if (tx.status != "Successful" && tx.status != "Failed") {
         const txStatus = await this.state.web3.eth.getTransactionReceipt(
           tx.hash
         );
+        newTx = tx;
         if (txStatus) {
           if (txStatus.status) {
-            tx.status = "successful";
+            newTx.status = "Successful";
           } else {
-            tx.status = "failed";
+            newTx.status = "Failed";
           }
         } else {
-          tx.status = "pending";
+          newTx.status = "Pending";
         }
       }
+      updatedTxs.push(tx);
     }
+    this.setState({
+      txs: updatedTxs
+    })
   };
 
   handleChange = async (event) => {

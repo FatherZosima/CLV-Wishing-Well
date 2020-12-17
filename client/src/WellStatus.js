@@ -1,18 +1,12 @@
 import React, { Component } from "react";
 
-import { isMobile } from "react-device-detect";
-
-import { Form, Button, Col, InputGroup } from "react-bootstrap";
+import { Button, Row, Container, Col, Form, InputGroup } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
+
+import { Bounce } from "react-awesome-reveal";
 
 import "./WellStatus.css";
 import Countdown from "./Countdown.js";
-import {
-  CircularProgressbar,
-  CircularProgressbarWithChildren,
-  buildStyles,
-} from "react-circular-progressbar";
-import "react-circular-progressbar/dist/styles.css";
 import AnimatedNumber from "react-animated-number";
 
 //things to trick
@@ -21,32 +15,26 @@ class WellStatus extends Component {
   constructor(props) {
     super(props);
     this.state = {
+      callbacks: props.callbacks,
       wellPot: props.wellPot,
       roundEndTime: props.roundEndTime,
       bigPotFrequency: props.bigPotFrequency,
       round: props.round,
-      startingSeconds: 1,
+      userWinnings: props.userWinnings,
+      minBet: props.minBet,
+      userAllowance: props.userAllowance,
+      wellC2Dbalance: props.wellC2Dbalance,
+      roundOver: false,
     };
+    console.log("Winnings " + props.userWinnings);
   }
 
   componentDidUpdate(prevProps) {
     for (var key of Object.keys(prevProps)) {
       if (prevProps[key] !== this.props[key]) {
-        //console.log("wellstatus."+key+" changed from " +prevProps[key]+" to "+this.props[key]);
         this.setState({
           [key]: this.props[key],
         });
-        if (key === "roundEndTime") {
-          let endTime = new Date(this.props[key] * 1000); //mult by 1000 to go to milliseconds
-          let now = new Date();
-          let timeLeft = (endTime - now) / 1000; //convert to secs
-          if (timeLeft <= 0) {
-            timeLeft = 1; //small value
-          }
-          this.setState({
-            startingSeconds: timeLeft,
-          });
-        }
       }
     }
   }
@@ -55,10 +43,11 @@ class WellStatus extends Component {
   componentWillUnmount() {}
 
   countdownCallback = (totalSecondsLeft) => {
-    this.setState({
-      wellTotalSecondsLeft: totalSecondsLeft,
-    });
-    this.props.callback(totalSecondsLeft);
+    if (totalSecondsLeft <= 0 != this.state.roundOver) {
+      this.setState({
+        roundOver: totalSecondsLeft <= 0,
+      });
+    }
   };
 
   handleChange = async (event) => {
@@ -78,71 +67,125 @@ class WellStatus extends Component {
     return str;
   }
 
+  Status = (props) => {
+    return (
+      <Col className="Status">
+        <Bounce triggerOnce>
+          <div>
+            <h3>{props.value}</h3>
+            <span>{props.text}</span>
+          </div>
+        </Bounce>
+      </Col>
+    );
+  };
+
   render() {
     const {
+      callbacks,
       wellPot,
-      wellTotalSecondsLeft,
       round,
       roundEndTime,
       bigPotFrequency,
-      startingSeconds,
+      betAmount,
+      userAllowance,
+      minBet,
+      roundOver,
+      userWinnings,
+      wellC2Dbalance,
     } = this.state;
-
     return (
       <div className="WellStatus">
-        <CircularProgressbarWithChildren
-          value={((round % bigPotFrequency) / bigPotFrequency) * 100}
-          strokeWidth={3}
-          styles={buildStyles({
-            pathColor: "#D4Af37",
-            trailColor: "transparent",
-          })}
-        >
-          {/*
-          Width here needs to be (100 - 2 * strokeWidth)% 
-          in order to fit exactly inside the outer progressbar.
-        */}
-          <div style={{ width: "94%" }}>
-            <CircularProgressbarWithChildren
-              className="statusCircle"
-              value={(wellTotalSecondsLeft / startingSeconds) * 100}
-              strokeWidth={5}
-              background
-              styles={buildStyles({
-                backgroundColor: "rgba(0,0,0,0.9)",
-                pathColor: "#f00",
-                trailColor: "transparent",
-              })}
-            >
-              <div id="currPot">
-                <div id="potText">
-                  <h4>
-                    <AnimatedNumber
-                      stepPrecision={0.1}
-                      value={wellPot}
-                      formatValue={(n) => `${n.toFixed(1)} CLV`}
-                    />
-                  </h4>
-                  <p>Current Pot</p>
+        <Countdown
+          endTime={roundEndTime}
+          parentCallback={this.countdownCallback}
+        ></Countdown>
+        <Container fluid className="StatusInfo">
+          <Row>
+            <this.Status
+              value={parseFloat(wellPot).toFixed(2) + " CLV"}
+              text="Pot Balance"
+            />
+          </Row>
+          <Row>
+            <InputGroup>
+              <InputGroup.Prepend>
+                <InputGroup.Text
+                  className="disable-text-selection"
+                  onClick={(e) =>
+                    this.setState({
+                      betAmount: roundOver ? 0.222222 : minBet,
+                    })
+                  }
+                >
+                  Min: {roundOver ? 0.222222 : minBet}
+                </InputGroup.Text>
+              </InputGroup.Prepend>
+              <Form.Control
+                name="betAmount"
+                type="number"
+                id="inputBetAmount"
+                placeholder={minBet}
+                value={betAmount}
+                onChange={(e) => {
+                  this.handleChange(e);
+                }}
+              />
+              <InputGroup.Append>
+                {parseFloat(betAmount) > parseFloat(userAllowance) && (
+                  <Button
+                    variant="warning"
+                    onClick={(e) => callbacks.approve()}
+                  >
+                    Approve
+                  </Button>
+                )}
+                {(parseFloat(betAmount) <= parseFloat(userAllowance) ||
+                  !betAmount) &&
+                  roundOver && (
+                    <Button
+                      variant="info"
+                      onClick={(e) => callbacks.start(betAmount)}
+                    >
+                      Start Round
+                    </Button>
+                  )}
+                {(parseFloat(betAmount) <= parseFloat(userAllowance) ||!betAmount) &&
+                  !roundOver && (
+                    <Button
+                      variant="info"
+                      onClick={(e) => callbacks.bet(betAmount)}
+                    >
+                      Bet
+                    </Button>
+                  )}
+              </InputGroup.Append>
+            </InputGroup>
+          </Row>
+          <Row>
+            <this.Status value={round} text="Round Number" />
+            <this.Status
+              value={parseFloat(wellC2Dbalance).toFixed(1) + " C2D"}
+              text="in Pot of Gold"
+            />
+            <this.Status
+              value={bigPotFrequency - (round % bigPotFrequency)}
+              text="Rounds until Pot of Gold"
+            />
+          </Row>
+          <Row>
+            <Col>
+              <Bounce triggerOnce className="Staus">
+                <div>
+                  <h4>Winnings: {userWinnings} CLV</h4>
+                  <Button variant="info" onClick={callbacks.withdraw}>
+                    Withdraw
+                  </Button>
                 </div>
-              </div>
-              <Countdown
-                endTime={roundEndTime}
-                parentCallback={this.countdownCallback}
-              >
-                {" "}
-              </Countdown>
-              <h3>Round {round}</h3>
-              <p>
-                {bigPotFrequency - (round % bigPotFrequency) != 1
-                  ? "Pot of Gold in " +
-                    Number(bigPotFrequency - (round % bigPotFrequency)) +
-                    " rounds"
-                  : "Pot of Gold starting next round"}
-              </p>
-            </CircularProgressbarWithChildren>
-          </div>
-        </CircularProgressbarWithChildren>
+              </Bounce>
+            </Col>
+          </Row>
+        </Container>
       </div>
     );
   }

@@ -1,19 +1,15 @@
-.WellStatus {
-}
-
-#statusInfo {
-  width: 100%;
+.WellStatus .col {
   text-align: center;
 }
-
-#currPot {
-  text-align: center;
+div.Status.col {
+  padding: 0px;
+  margin-left: 5px;
+  margin-right: 5px;
+}
+.WellStatus .row:nth-child(3) {
+  margin-top: 40px;
 }
 
-#potText {
-  position: relative;
-  top: 50%;
-  -webkit-transform: translateY(-50%);
-  -ms-transform: translateY(-50%);
-  transform: translateY(-50%);
+.WellStatus .row:nth-child(3) .col {
+  margin-bottom: 10px;
 }

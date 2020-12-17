@@ -52,9 +52,11 @@ class CloverInterface extends Component {
   render() {
     return (
       <div className="station">
-        <h2>CLV station</h2>
+        <h2>CLV station (testing)</h2>
         <p>You currently own: {this.state.clvBal}CLV</p>
-        <Button onClick={this.mintCLV}>Mint 1000 ClV</Button>
+        <Button variant="info" onClick={this.mintCLV}>
+          Mint 1000 ClV
+        </Button>
       </div>
     );
   }

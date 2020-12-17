@@ -1,17 +1,17 @@
-.countdown {
+.countdown-clock {
   text-align: center;
-  width: 80%;
-  margin: 0px auto;
+  width: 100%;
 }
 
-.countdown-clock {
-  display: flex;
-  justify-content: space-between;
+.countdown-clock .col {
+  padding: 0px;
+  margin: 5px;
 }
-.countdown-number {
-  float: left;
-  width: 21%;
+
+.countdown-number span {
+  font-size: 12px;
 }
-.countdown-number * {
-  text-align: center;
+.countdown-number h3 {
+  font-size: 50px;
+  margin: 0px;
 }

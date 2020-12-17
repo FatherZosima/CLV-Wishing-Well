@@ -1,9 +1,14 @@
 .TXwindow {
-  width: 100%;
   padding: 10px;
   border-radius: 15px;
-  min-height: 300px;
   border: 2px solid #1a2228;
+  height:305px;
+  overflow-y:scroll;
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+.TXwindow::-webkit-scrollbar {
+  display: none;
 }
 
 .tx {
@@ -14,12 +19,12 @@
   padding: 8px;
   margin-bottom: 5px;
 }
-.tx.pending {
+.tx.Pending {
   border: 2px solid #ffae42;
 }
-.tx.successful {
+.tx.Successful {
   border: 2px solid #00ff00;
 }
-.tx.failed {
+.tx.Failed {
   border: 2px solid #ff0000;
 }

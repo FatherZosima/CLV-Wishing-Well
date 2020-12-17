@@ -3,7 +3,7 @@ import React, { Component } from "react";
 import { Container, Col, Row } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 
-import { Flip, Fade, Bounce, Tada } from "react-awesome-reveal";
+import { Bounce } from "react-awesome-reveal";
 
 import "./WellDetails.css";
 
@@ -30,14 +30,13 @@ class WellDetails extends Component {
       wellPlays: props.wellPlays,
       wellCLVBalance: props.wellCLVBalance,
       wellUserAllowance: props.wellUserAllowance,
+      bigPotFreq: props.bigPotFreq,
     };
   }
 
   componentDidUpdate(prevProps) {
-    console.log("we updated");
     for (var key of Object.keys(prevProps)) {
       if (prevProps[key] !== this.props[key]) {
-        console.log(key + " updated");
         this.setState({
           [key]: this.props[key],
         });
@@ -58,25 +57,18 @@ class WellDetails extends Component {
 
   Detail = (props) => {
     return (
-      <Bounce triggerOnce>
-        <div className="Detail">
-          {props.value}
-          <br />
-          {props.title}
-        </div>
-      </Bounce>
+      <Col>
+        <Bounce triggerOnce className="Detail">
+          <div>
+            <h3>{props.value}</h3>
+            <span>{props.title}</span>
+          </div>
+        </Bounce>
+      </Col>
     );
   };
 
   render() {
-    /*<Bounce triggerOnce>
-              <div className="Detail">
-              <a href={"https://rinkeby.etherscan.io/address/" + lastPlayer}>{this.shortenAddress(lastPlayer)}</a>{lastPlayer===accounts[0] && <span> (YOU)</span>}
-              <br />
-              Last Player
-              </div>
-            </Bounce>*/
-
     const {
       web3,
       accounts,
@@ -92,51 +84,48 @@ class WellDetails extends Component {
       lastPlayer,
       lastWinner,
       wellPlays,
+      bigPotFreq,
     } = this.state;
     return (
       <div className="WellDetails">
-        <Container>
+        <Container fluid>
           <Row>
-            <Col>
-              <this.Detail
-                value={
-                  <a
-                    href={"https://rinkeby.etherscan.io/address/" + lastPlayer}
-                  >
-                    {" "}
-                    {this.shortenAddress(lastPlayer)}
-                  </a>
-                }
-                title={"Last Player"}
-              />
-            </Col>
-            <Col>
-              <this.Detail
-                value={
-                  <a
-                    href={"https://rinkeby.etherscan.io/address/" + lastWinner}
-                  >
-                    {" "}
-                    {this.shortenAddress(lastWinner)}
-                  </a>
-                }
-                title={"Last Winner"}
-              />
-            </Col>
+            <this.Detail
+              value={
+                <a href={"https://rinkeby.etherscan.io/address/" + lastPlayer}>
+                  {this.shortenAddress(lastPlayer)}
+                  {lastPlayer == accounts[0] && " YOU"}
+                </a>
+              }
+              title="Last Player"
+            />
+            <this.Detail
+              value={
+                <a href={"https://rinkeby.etherscan.io/address/" + lastWinner}>
+                  {this.shortenAddress(lastWinner)}
+                  {lastWinner == accounts[0] && " YOU"}
+                </a>
+              }
+              title="Last Winner"
+            />
+          </Row>
+          <Row>
+            <this.Detail
+              value={"Every " + bigPotFreq + " Rounds"}
+              title="Big Pot Frequency"
+            />
+            <this.Detail value={wellCLVBalance} title="Well CLV" />
           </Row>
         </Container>
-        <p>Well Pot: {wellPot}</p>
-        <p>MinimumBet: {minBet}</p>
-        <p>Well Round Num: {round}</p>
-        <p>Plays this round: {wellPlays}</p>
-        <p>C2D balance: {parseFloat(wellC2Dbalance).toFixed(2)}</p>
-        <p>Well User allowance: {wellUserAllowance}</p>
-        <p>Well CLV bal: {wellCLVBalance}</p>
+        <PendingTx txs={txs} accounts={accounts} web3={web3} />
+        <CloverInterface
+          accounts={accounts}
+          web3={web3}
+          CLVcontract={contracts.CLV}
+          CLVscalar={CLVscalar}
+        />
       </div>
     );
   }
 }
-
-//<PendingTx txs={txs} accounts={accounts} web3={web3} />
-//<CloverInterface accounts={accounts} web3={web3} CLVcontract={contracts.CLV} CLVscalar={CLVscalar} />
 export default WellDetails;

@@ -12,8 +12,8 @@ import "./CLV2D.sol";
 contract WishingWell {
   uint256 constant private startingPotSize = 1000000; //pot must always start with 1
   uint256 constant private skimPercent = 20; //skim 5% of winnins to put into C2D (100/20 == 5)
-  uint constant public bigPotFrequency = 10; // how often the big pot occurs
-  uint constant private minute = 10; //60 seconds in a minute
+  uint constant public bigPotFrequency = 50; // how often the big pot occurs
+  uint constant private minute = 60; //60 seconds in a minute
 
 	event Bet(address better, uint256 amount, uint256 potBalance);
   event Withdraw(address user, uint256 amount);
@@ -160,7 +160,7 @@ contract WishingWell {
 
     info.playsThisRound = 0;
     info.lastPlayer = address(0x0);
-    info.roundEndTime = now+2*60;//add 2 mins
+    info.roundEndTime = now+5*minute;//add 5 mins + the bettings addition (also 5)
     info.minBet = 222222; //always start with a minbet of 0.222222
     emit StartNextRound(info.roundNumber, getPotBalance());
 

@@ -1,3 +1,25 @@
-.Detail {
+.WellDetails .container-fluid {
+  border-radius: 18px;
+}
+
+.WellDetails .col {
+  padding: 0px;
+  margin: 5px;
   text-align: center;
+}
+
+.WellDetails .col:not(:first-child) {
+}
+
+.WellDetails .row:not(:last-child) {
+}
+.Detail {
+  margin: 5px;
+  font-size: 20px;
+}
+.Detail span {
+  font-size: 12px;
+}
+.Detail h3 {
+  margin: 0px;
 }

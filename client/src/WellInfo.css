@@ -1,0 +1,32 @@
+.WellInfo {
+}
+
+.WellInfo .container-fluid {
+  background-image: radial-gradient(
+    circle 881px at 8% 13.5%,
+    rgba(246, 249, 252, 1) 9.4%,
+    rgba(126, 178, 247, 1) 100.2%
+  );
+  border-radius: 18px;
+  color: black;
+}
+
+.WellInfo .col {
+  padding: 0px;
+  margin: 5px;
+}
+
+.WellInfo .col:not(:first-child) {
+}
+
+.WellInfo .row:last-child {
+  border-top: 1px solid black;
+}
+.WellInfo .row {
+  margin: 1px;
+}
+.InfoCol {
+  margin: 2px;
+  text-align: center;
+  font-size: 20px;
+}

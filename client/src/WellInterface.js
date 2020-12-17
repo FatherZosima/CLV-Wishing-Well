@@ -2,17 +2,7 @@ import React, { Component, useState } from "react";
 
 import { isMobile } from "react-device-detect";
 
-import {
-  Alert,
-  Container,
-  Tabs,
-  Tab,
-  Form,
-  Button,
-  Col,
-  Row,
-  InputGroup,
-} from "react-bootstrap";
+import { Container, Tabs, Tab, Col, Row } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 import "./WellInterface.css";
@@ -22,7 +12,6 @@ import Notification from "react-web-notification";
 import WellStatus from "./WellStatus.js";
 import WellInfo from "./WellInfo.js";
 import WellDetails from "./WellDetails.js";
-import OutBetAlert from "./OutBetAlert.js";
 
 class WellInterface extends Component {
   constructor(props) {
@@ -37,9 +26,7 @@ class WellInterface extends Component {
       wellC2Dbalance: 0,
       roundEndTime: 0,
       minBet: 0,
-      WellBetAmount: 0,
-      roundOver: true,
-      wasOutBet: false,
+      bigPotFreq: 0,
       txs: [],
     };
 
@@ -98,12 +85,22 @@ class WellInterface extends Component {
 
   CLVapproveWell = async () => {
     const { accounts, contracts, addresses, txs } = this.state;
+    let self = this;
     //only do this is you need methods
     await contracts.CLV.methods
       .approve(addresses.Well, 1e12)
       .send()
       .on("transactionHash", function (hash) {
-        txs.push({ type: "Approve Well", note: "", hash: hash });
+          self.setState((prevState) => ({
+            txs: [
+              ...prevState.txs,
+              {
+                type: "Approve",
+                note: "",
+                hash: hash,
+              },
+            ],
+          }));
       });
   };
 
@@ -115,7 +112,6 @@ class WellInterface extends Component {
       this.state.lastPlayer == accounts[0] &&
       response.lastPlayer != accounts[0]
     ) {
-      //this.setState({wasOutBet:true});
       alert(
         "You are no longer the last player. Bet again to reclaim your place"
       );
@@ -142,26 +138,13 @@ class WellInterface extends Component {
         });
       }
     }
-    /*this.setState({
-      wellPot: response.potBalance / CLVscalar,
-      wellRoundNumber: response.roundNumber,
-      wellPlays: response.playsThisRound,
-      roundEndTime: response.roundEndTime,
-      minBet: response.minBet / CLVscalar,
-      lastPlayer: response.lastPlayer,
-      lastWinner: response.lastWinner,
-      wellCLVBalance: response.wellBalance / CLVscalar,
-      wellUserAllowance: web3.utils.fromWei(response.userAllowance, "mwei"),
-      wellUserWinnings: response.userWinnings / CLVscalar,
-      wellC2Dbalance: web3.utils.fromWei(response.wellC2Dbalance, "ether"),
-      bigPotFrequency: response.bigPotFreq
-    });*/
-    console.log(this.state);
   };
 
-  bet = async () => {
-    const { web3, contracts, WellBetAmount, CLVscalar, txs } = this.state;
-    let wellBet = parseFloat(WellBetAmount);
+  bet = async (betAmount) => {
+    const { minBet, contracts, CLVscalar, txs } = this.state;
+    let wellBet = parseFloat(betAmount);
+    let self = this;
+    console.log(JSON.stringify(contracts.Well));
     if (wellBet > 0 && wellBet >= this.state.minBet) {
       console.log("trying to bet " + wellBet);
       let amt = wellBet * CLVscalar;
@@ -169,73 +152,73 @@ class WellInterface extends Component {
         .bet(amt)
         .send()
         .on("transactionHash", function (hash) {
-          txs.push({ type: "Bet", note: WellBetAmount + " CLV", hash: hash });
+          self.setState((prevState) => ({
+            txs: [
+              ...prevState.txs,
+              {
+                type: "Bet",
+                note: betAmount + " CLV",
+                hash: hash,
+              },
+            ],
+          }));
+          console.log("added tx");
         });
+    } else {
+      alert("Bet amount must be greater than the minimum bet of " + minBet);
     }
   };
 
-  startNextRound = async () => {
-    const {
-      web3,
-      contracts,
-      roundOver,
-      WellBetAmount,
-      CLVscalar,
-      txs,
-    } = this.state;
-    let wellBet = parseFloat(WellBetAmount);
-    if (wellBet >= 0.222222 && roundOver) {
+  startNextRound = async (betAmount) => {
+    const { web3, contracts, CLVscalar, txs } = this.state;
+    var alertText = ' ';
+    console.log(JSON.stringify(contracts.Well));
+    let self = this;
+    let wellBet = parseFloat(betAmount);
+    if (wellBet >= 0.222222) {
       let amt = wellBet * CLVscalar;
       await contracts.Well.methods
         .startNextRound(amt)
         .send()
         .on("transactionHash", function (hash) {
-          txs.push({
-            type: "Start Next Round",
-            note: WellBetAmount + " CLV",
-            hash: hash,
-          });
+          self.setState((prevState) => ({
+            txs: [
+              ...prevState.txs,
+              {
+                type: "Start Next Round",
+                note: betAmount + " CLV",
+                hash: hash,
+              },
+            ],
+          }));
+          console.log("pushed to tsx");
         });
+    } else {
+      alert("Must enter the minimum bet of 0.222222 to start a round");
     }
   };
 
   withdrawWell = async () => {
     const { web3, accounts, contracts, txs, wellUserWinnings } = this.state;
+    let self = this;
     await contracts.Well.methods
       .withdrawWinnings()
       .send()
       .on("transactionHash", function (hash) {
-        txs.push({ type: "Withdraw Winnings", note: "", hash: hash });
+          self.setState((prevState) => ({
+            txs: [
+              ...prevState.txs,
+              {
+                type: "Withdraw Winnings",
+                note: "",
+                hash: hash,
+              },
+            ],
+          }));
       });
   };
-
-  timeLeftCallback = (totalSecondsLeft) => {
-    if (totalSecondsLeft <= 0 != this.state.roundOver) {
-      this.setState({
-        roundOver: totalSecondsLeft <= 0,
-      });
-    }
-  };
-
-  handleChange = async (event) => {
-    const { target } = event;
-    const value = target.type === "checkbox" ? target.checked : target.value;
-    const { name } = target;
-    await this.setState({
-      [name]: value,
-    });
-  };
-
-  shortenAddress(addy) {
-    if (addy == null) {
-      return "0x00...000";
-    }
-    let str = addy.slice(0, 4) + "..." + addy.slice(-3);
-    return str;
-  }
 
   render() {
-    console.log("wellinterface render");
     const {
       web3,
       contracts,
@@ -245,10 +228,8 @@ class WellInterface extends Component {
       CLVscalar,
       potBalance,
       minBet,
-      WellBetAmount,
       bigPotFreq,
       roundEndTime,
-      roundOver,
       wellC2Dbalance,
       roundNumber,
       lastPlayer,
@@ -256,64 +237,35 @@ class WellInterface extends Component {
       playsThisRound,
       wellBalance,
       userAllowance,
-      wasOutBet,
+      userWinnings,
     } = this.state;
     if (isMobile) {
       return (
-        <Tabs defaultActiveKey="info" id="uncontrolled-tab-example">
+        <Tabs
+          defaultActiveKey="well"
+          id="uncontrolled-tab-example"
+          className="WellStation"
+        >
           <Tab eventKey="info" title="Info">
-            <h2>Wishing Well</h2>
-            <p>Instructions go here</p>
+            <WellInfo addresses={addresses} />
           </Tab>
           <Tab eventKey="well" title="Well">
             <WellStatus
               wellPot={potBalance}
+              minBet={minBet}
+              userAllowance={userAllowance}
               round={roundNumber}
               bigPotFrequency={bigPotFreq}
               roundEndTime={roundEndTime}
-              callback={this.timeLeftCallback}
+              userWinnings={userWinnings}
+              wellC2Dbalance={wellC2Dbalance}
+              callbacks={{
+                withdraw: this.withdrawWell,
+                bet: this.bet,
+                start: this.startNextRound,
+                approve: this.CLVapproveWell,
+              }}
             />
-            <p>User winnings: {this.state.wellUserWinnings}</p>
-            <Button onClick={this.withdrawWell}>Withdraw</Button>
-
-            <InputGroup>
-              <InputGroup.Prepend>
-                <InputGroup.Text
-                  className="disable-text-selection"
-                  onClick={(e) =>
-                    this.setState({
-                      WellBetAmount: roundOver ? 0.222222 : minBet,
-                    })
-                  }
-                >
-                  Min: {roundOver ? 0.222222 : minBet}
-                </InputGroup.Text>
-              </InputGroup.Prepend>
-              <Form.Control
-                name="WellBetAmount"
-                type="number"
-                id="inputWellBetAmount"
-                placeholder={100}
-                value={WellBetAmount}
-                onChange={(e) => {
-                  this.handleChange(e);
-                }}
-              />
-              <InputGroup.Append>
-                <InputGroup.Text>CLV</InputGroup.Text>
-              </InputGroup.Append>
-              <InputGroup.Append>
-                {parseFloat(WellBetAmount) > parseFloat(userAllowance) && (
-                  <Button onClick={this.CLVapproveWell}>Approve</Button>
-                )}
-                {parseFloat(WellBetAmount) <= parseFloat(userAllowance) &&
-                  roundOver && (
-                    <Button onClick={this.nextRound}>Start Next Round</Button>
-                  )}
-                {parseFloat(WellBetAmount) <= parseFloat(userAllowance) &&
-                  !roundOver && <Button onClick={this.bet}>Bet</Button>}
-              </InputGroup.Append>
-            </InputGroup>
           </Tab>
           <Tab eventKey="Details" title="Details">
             <WellDetails
@@ -332,6 +284,7 @@ class WellInterface extends Component {
               wellPlays={playsThisRound}
               wellCLVBalance={wellBalance}
               wellUserAllowance={userAllowance}
+              bigPotFreq={bigPotFreq}
             />
           </Tab>
         </Tabs>
@@ -348,54 +301,20 @@ class WellInterface extends Component {
             <Col>
               <WellStatus
                 wellPot={potBalance}
+                minBet={minBet}
+                userAllowance={userAllowance}
                 round={roundNumber}
                 bigPotFrequency={bigPotFreq}
                 roundEndTime={roundEndTime}
-                callback={this.timeLeftCallback}
+                userWinnings={userWinnings}
+                wellC2Dbalance={wellC2Dbalance}
+                callbacks={{
+                  withdraw: this.withdrawWell,
+                  bet: this.bet,
+                  start: this.startNextRound,
+                  approve: this.CLVapproveWell,
+                }}
               />
-              <p>User winnings: {this.state.wellUserWinnings}</p>
-              <Button onClick={this.withdrawWell}>Withdraw</Button>
-              <OutBetAlert wasOutBet={wasOutBet} />
-              <InputGroup>
-                <InputGroup.Prepend>
-                  <InputGroup.Text
-                    className="disable-text-selection"
-                    onClick={(e) =>
-                      this.setState({
-                        WellBetAmount: roundOver ? 0.222222 : minBet,
-                      })
-                    }
-                  >
-                    Min: {roundOver ? 0.222222 : minBet}
-                  </InputGroup.Text>
-                </InputGroup.Prepend>
-                <Form.Control
-                  name="WellBetAmount"
-                  type="number"
-                  id="inputWellBetAmount"
-                  placeholder={100}
-                  value={WellBetAmount}
-                  onChange={(e) => {
-                    this.handleChange(e);
-                  }}
-                />
-                <InputGroup.Append>
-                  <InputGroup.Text>CLV</InputGroup.Text>
-                </InputGroup.Append>
-                <InputGroup.Append>
-                  {parseFloat(WellBetAmount) > parseFloat(userAllowance) && (
-                    <Button onClick={this.CLVapproveWell}>Approve</Button>
-                  )}
-                  {parseFloat(WellBetAmount) <= parseFloat(userAllowance) &&
-                    roundOver && (
-                      <Button onClick={this.startNextRound}>
-                        Start Next Round
-                      </Button>
-                    )}
-                  {parseFloat(WellBetAmount) <= parseFloat(userAllowance) &&
-                    !roundOver && <Button onClick={this.bet}>Bet</Button>}
-                </InputGroup.Append>
-              </InputGroup>
             </Col>
 
             <Col>
@@ -415,6 +334,7 @@ class WellInterface extends Component {
                 wellPlays={playsThisRound}
                 wellCLVBalance={wellBalance}
                 wellUserAllowance={userAllowance}
+                bigPotFreq={bigPotFreq}
               />
             </Col>
           </Row>
