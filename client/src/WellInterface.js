@@ -91,16 +91,16 @@ class WellInterface extends Component {
       .approve(addresses.Well, 1e12)
       .send()
       .on("transactionHash", function (hash) {
-          self.setState((prevState) => ({
-            txs: [
-              ...prevState.txs,
-              {
-                type: "Approve",
-                note: "",
-                hash: hash,
-              },
-            ],
-          }));
+        self.setState((prevState) => ({
+          txs: [
+            ...prevState.txs,
+            {
+              type: "Approve",
+              note: "",
+              hash: hash,
+            },
+          ],
+        }));
       });
   };
 
@@ -144,9 +144,7 @@ class WellInterface extends Component {
     const { minBet, contracts, CLVscalar, txs } = this.state;
     let wellBet = parseFloat(betAmount);
     let self = this;
-    console.log(JSON.stringify(contracts.Well));
     if (wellBet > 0 && wellBet >= this.state.minBet) {
-      console.log("trying to bet " + wellBet);
       let amt = wellBet * CLVscalar;
       await contracts.Well.methods
         .bet(amt)
@@ -162,7 +160,6 @@ class WellInterface extends Component {
               },
             ],
           }));
-          console.log("added tx");
         });
     } else {
       alert("Bet amount must be greater than the minimum bet of " + minBet);
@@ -171,8 +168,7 @@ class WellInterface extends Component {
 
   startNextRound = async (betAmount) => {
     const { web3, contracts, CLVscalar, txs } = this.state;
-    var alertText = ' ';
-    console.log(JSON.stringify(contracts.Well));
+    var alertText = " ";
     let self = this;
     let wellBet = parseFloat(betAmount);
     if (wellBet >= 0.222222) {
@@ -191,7 +187,6 @@ class WellInterface extends Component {
               },
             ],
           }));
-          console.log("pushed to tsx");
         });
     } else {
       alert("Must enter the minimum bet of 0.222222 to start a round");
@@ -205,16 +200,16 @@ class WellInterface extends Component {
       .withdrawWinnings()
       .send()
       .on("transactionHash", function (hash) {
-          self.setState((prevState) => ({
-            txs: [
-              ...prevState.txs,
-              {
-                type: "Withdraw Winnings",
-                note: "",
-                hash: hash,
-              },
-            ],
-          }));
+        self.setState((prevState) => ({
+          txs: [
+            ...prevState.txs,
+            {
+              type: "Withdraw Winnings",
+              note: "",
+              hash: hash,
+            },
+          ],
+        }));
       });
   };
 
@@ -244,7 +239,7 @@ class WellInterface extends Component {
         <Tabs
           defaultActiveKey="well"
           id="uncontrolled-tab-example"
-          className="WellStation"
+          className="WellStation sticky-nav"
         >
           <Tab eventKey="info" title="Info">
             <WellInfo addresses={addresses} />

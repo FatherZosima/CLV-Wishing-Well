@@ -1,17 +1,13 @@
 import React, { Component } from "react";
 
-import { Form, Button, Col, InputGroup } from "react-bootstrap";
-import "bootstrap/dist/css/bootstrap.min.css";
-
-import CloverInterface from "./CloverInterface.js";
-import C2DInterface from "./C2DInterface.js";
 import WellInterface from "./WellInterface.js";
 
 import CLVContract from "./contracts/Clover.json";
 import CLV2DContract from "./contracts/CLV2D.json";
 import CLVWellContract from "./contracts/WishingWell.json";
-
 import getWeb3 from "./getWeb3";
+
+//import {C2Dabi, CLVabi, C2Daddress, CLVaddress} from "./contracts/ExistingABI.js";
 
 import "./App.css";
 
@@ -37,16 +33,16 @@ class App extends Component {
       const networkId = await web3.eth.net.getId();
       console.log(networkId);
 
-      const CLVdeployedNetwork = CLVContract.networks[networkId];
-      const CLVinstance = new web3.eth.Contract(
-        CLVContract.abi,
-        CLVdeployedNetwork && CLVdeployedNetwork.address,
-        { from: accounts[0] }
-      );
+      var C2Daddress = "0xc744dc036f42C2538d63EcA6348E2066e183279E";
+      var CLVaddress = "0x22222C03318440305aC3e8a7820563d6A9FD777F";
+
+      const CLVinstance = new web3.eth.Contract(CLVContract.abi, CLVaddress, {
+        from: accounts[0],
+      });
       const CLV2DdeployedNetwork = CLV2DContract.networks[networkId];
       const CLV2Dinstance = new web3.eth.Contract(
         CLV2DContract.abi,
-        CLV2DdeployedNetwork && CLV2DdeployedNetwork.address,
+        C2Daddress,
         { from: accounts[0] }
       );
       const CLVWellDeployedNetwork = CLVWellContract.networks[networkId];
@@ -67,8 +63,8 @@ class App extends Component {
           Well: CLVWellinstance,
         },
         addresses: {
-          CLV: CLVdeployedNetwork.address,
-          C2D: CLV2DdeployedNetwork.address,
+          CLV: CLVaddress,
+          C2D: C2Daddress,
           Well: CLVWellDeployedNetwork.address,
         },
       });
@@ -80,17 +76,6 @@ class App extends Component {
       console.error(error);
     }
   };
-
-  /*
- *
-        <p>CLV address: {this.state.clvAddress} <a href={"https://rinkeby.etherscan.io/token/"+this.state.clvAddress}>link</a></p>
-        <p>C2D address: {this.state.c2dAddress} <a href={"https://rinkeby.etherscan.io/token/"+this.state.c2dAddress}>link</a></p>
-        <p>CLV Well address: {this.state.clvWellAddress} <a href={"https://rinkeby.etherscan.io/address/"+this.state.clvWellAddress}>link</a></p>
-        <CloverInterface accounts={this.state.accounts} web3={this.state.web3} CLVcontract={this.state.contracts.CLV} CLVscalar={CLVscalar} />
-        <C2DInterface accounts={this.state.accounts} web3={this.state.web3} contracts={this.state.contracts} addresses={this.state.addresses} CLVscalar={CLVscalar} />
- *
- *
- */
 
   render() {
     if (!this.state.web3) {

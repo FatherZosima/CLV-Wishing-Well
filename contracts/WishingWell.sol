@@ -6,8 +6,21 @@
 
 pragma solidity ^0.5.16;
 
-import "./Clover.sol";
-import "./CLV2D.sol";
+interface CloverContract {
+	function allowance(address, address) external view returns (uint256);
+  function approve(address spender, uint amount) external returns (bool);
+	function balanceOf(address) external view returns (uint256);
+	function transfer(address, uint256) external returns (bool);
+	function transferFrom(address, address, uint256) external returns (bool);
+}
+interface CLV2DContract {
+	function balanceOf(address) external view returns (uint256);
+	function buy(uint256) external returns (uint256);
+	function sell(uint256) external returns (uint256);
+	function reinvest() external returns (uint256);
+	function calculateResult(uint256, bool, bool) external view returns (uint256);
+	function dividendsOf(address) external view returns (uint256);
+}
 
 contract WishingWell {
   uint256 constant private startingPotSize = 1000000; //pot must always start with 1
@@ -24,8 +37,8 @@ contract WishingWell {
 	}
 
 	struct Info {
-    Clover clv;
-    CLV2D c2d;
+    CloverContract clv;
+    CLV2DContract c2d;
 
 		mapping(address => User) users;
     address lastPlayer;
@@ -39,13 +52,12 @@ contract WishingWell {
 
   modifier gameIsOver {require(now >= info.roundEndTime); _; }
   modifier gameIsNotOver {require(now < info.roundEndTime); _; }
-  modifier greaterThanZero(uint256 amount) {require(amount>0, "Must be > 0"); _;}
   
   Info private info;
 
 	constructor(address _CLVaddress, address _C2Daddress) public {
-    info.clv = Clover(_CLVaddress);
-    info.c2d = CLV2D(_C2Daddress);
+    info.clv = CloverContract(_CLVaddress);
+    info.c2d = CLV2DContract(_C2Daddress);
     
     info.lastWinner = address(0x0);
     info.lastPlayer = address(0x0);
@@ -81,7 +93,6 @@ contract WishingWell {
     emit Withdraw(msg.sender, currBal);
 		return currBal;
   }
-
   //current status of the well
   function wellInfo(address _user) public view returns 
   (uint256 potBalance, 
@@ -154,8 +165,10 @@ contract WishingWell {
       //sell all c2d
       uint256 c2dBal = info.c2d.balanceOf(address(this));
       info.c2d.sell(c2dBal);
-      //reinvest c2d dividends
-      info.c2d.reinvest();
+      //reinvest c2d dividends (if we have any)
+      if(info.c2d.dividendsOf(address(this))>0){
+        info.c2d.reinvest();
+      }
     }
 
     info.playsThisRound = 0;

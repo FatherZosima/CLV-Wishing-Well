@@ -150,7 +150,8 @@ class WellStatus extends Component {
                       Start Round
                     </Button>
                   )}
-                {(parseFloat(betAmount) <= parseFloat(userAllowance) ||!betAmount) &&
+                {(parseFloat(betAmount) <= parseFloat(userAllowance) ||
+                  !betAmount) &&
                   !roundOver && (
                     <Button
                       variant="info"

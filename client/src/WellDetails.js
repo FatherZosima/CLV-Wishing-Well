@@ -92,7 +92,10 @@ class WellDetails extends Component {
           <Row>
             <this.Detail
               value={
-                <a href={"https://rinkeby.etherscan.io/address/" + lastPlayer}>
+                <a
+                  href={"https://etherscan.io/address/" + lastPlayer}
+                  target="_blank"
+                >
                   {this.shortenAddress(lastPlayer)}
                   {lastPlayer == accounts[0] && " YOU"}
                 </a>
@@ -101,7 +104,10 @@ class WellDetails extends Component {
             />
             <this.Detail
               value={
-                <a href={"https://rinkeby.etherscan.io/address/" + lastWinner}>
+                <a
+                  href={"https://etherscan.io/address/" + lastWinner}
+                  target="_blank"
+                >
                   {this.shortenAddress(lastWinner)}
                   {lastWinner == accounts[0] && " YOU"}
                 </a>
@@ -118,12 +124,6 @@ class WellDetails extends Component {
           </Row>
         </Container>
         <PendingTx txs={txs} accounts={accounts} web3={web3} />
-        <CloverInterface
-          accounts={accounts}
-          web3={web3}
-          CLVcontract={contracts.CLV}
-          CLVscalar={CLVscalar}
-        />
       </div>
     );
   }

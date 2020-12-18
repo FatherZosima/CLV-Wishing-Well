@@ -63,6 +63,19 @@ class Countdown extends Component {
   };
 
   render() {
+    if (this.state.totalSecondsLeft <= 0) {
+      return (
+        <Container fluid className="countdown-clock">
+          <Row>
+            <Col>
+              <h1>Round Over</h1>
+              <h4>Start the next round to finalize the results</h4>
+            </Col>
+          </Row>
+        </Container>
+      );
+    }
+
     return (
       <Container fluid className="countdown-clock">
         <Row>

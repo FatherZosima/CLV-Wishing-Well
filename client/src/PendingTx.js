@@ -11,15 +11,18 @@ class PendingTx extends Component {
       addresses: props.addresses,
       contracts: props.contracts,
       CLVscalar: props.CLVscalar,
-      txs: props.txs
+      txs: props.txs,
     };
   }
 
   componentDidUpdate(prevProps) {
     for (var key of Object.keys(this.props)) {
-      if(key=="txs"){
-        if(Object.keys(prevProps[key]).length != Object.keys(this.props[key]).length){
-          this.setState({txs: this.props.txs});
+      if (key == "txs") {
+        if (
+          Object.keys(prevProps[key]).length !=
+          Object.keys(this.props[key]).length
+        ) {
+          this.setState({ txs: this.props.txs });
           continue;
         }
       }
@@ -40,9 +43,9 @@ class PendingTx extends Component {
   checkTxs = async () => {
     var tx;
     var newTx;
-    var updatedTxs=[];
+    var updatedTxs = [];
     //if(this.state.txs.length==0){
-      //return;
+    //return;
     //}
     for (tx of this.state.txs) {
       if (tx.status != "Successful" && tx.status != "Failed") {
@@ -63,8 +66,8 @@ class PendingTx extends Component {
       updatedTxs.push(tx);
     }
     this.setState({
-      txs: updatedTxs
-    })
+      txs: updatedTxs,
+    });
   };
 
   handleChange = async (event) => {
@@ -81,7 +84,11 @@ class PendingTx extends Component {
       return "0x00...000";
     }
     let str = addy.slice(0, 9) + "..." + addy.slice(-4);
-    return <a href={"https://rinkeby.etherscan.io/tx/" + addy}>{str}</a>;
+    return (
+      <a href={"https://rinkeby.etherscan.io/tx/" + addy} target="_blank">
+        {str}
+      </a>
+    );
   }
 
   render() {

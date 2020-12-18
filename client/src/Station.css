@@ -1,6 +1,4 @@
 .station {
   border: 2px dashed black;
-  minheight: 100px;
-  width: 350px;
   float: left;
 }

@@ -58,7 +58,7 @@ contract CLV2D {
 	constructor(address _CLV_address) public {
 		info.clv = CLV(_CLV_address);
 	}
-
+	
 	function buy(uint256 _amount) external returns (uint256) {
 		require(_amount > 0);
 		require(info.clv.transferFrom(msg.sender, address(this), _amount));
