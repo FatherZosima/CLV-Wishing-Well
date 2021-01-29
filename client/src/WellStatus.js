@@ -125,7 +125,7 @@ class WellStatus extends Component {
                 name="betAmount"
                 type="number"
                 id="inputBetAmount"
-                placeholder={minBet}
+                placeholder={roundOver ? 0.222222 : minBet}
                 value={betAmount}
                 onChange={(e) => {
                   this.handleChange(e);

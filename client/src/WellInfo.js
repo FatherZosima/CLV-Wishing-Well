@@ -73,7 +73,7 @@ class WellInfo extends Component {
         </p>
         <h3>Gameplay</h3>
         <p>
-          Each round starts with a minimum of 1CLV and 10 minute timer. Pot of
+          Each round starts with a minimum of 1 CLV and 10 minute timer. Pot of
           Gold rounds start with 1 CLV + the profits from selling the Well's
           stored C2D. If the current round is over and the next round has not
           begun, you can start it by enter the amount you want to bet, and then

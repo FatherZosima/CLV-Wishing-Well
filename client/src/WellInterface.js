@@ -104,6 +104,40 @@ class WellInterface extends Component {
       });
   };
 
+  notifyOutBet() {
+    if (!window.Notification) {
+      console.log("Browser does not support notifications.");
+    } else {
+      // check if permission is already granted
+      if (Notification.permission === "granted") {
+        // show notification here
+        var notify = new Notification("You were out bet", {
+          body:
+            "Bet again to become the most recent player and secure your position",
+          icon: "http://cloverwell.surge.sh/WW5.png",
+        });
+      } else {
+        // request permission from user
+        Notification.requestPermission()
+          .then(function (p) {
+            if (p === "granted") {
+              // show notification here
+              var notify = new Notification("You were out bet", {
+                body:
+                  "Bet again to become the most recent player and secure your position",
+                icon: "http://cloverwell.surge.sh/WW5.png",
+              });
+            } else {
+              console.log("User blocked notifications.");
+            }
+          })
+          .catch(function (err) {
+            console.error(err);
+          });
+      }
+    }
+  }
+
   fetchWellInfo = async () => {
     const { web3, accounts, contracts, CLVscalar } = this.state;
     const response = await contracts.Well.methods.wellInfo(accounts[0]).call();
@@ -115,6 +149,7 @@ class WellInterface extends Component {
       alert(
         "You are no longer the last player. Bet again to reclaim your place"
       );
+      this.notifyOutBet();
     }
     for (var key of Object.keys(response)) {
       let val = response[key];
